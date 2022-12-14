@@ -3,14 +3,14 @@
  * signal handlers
  */
 
-#include <immintrin.h>
+#include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
 #include <strings.h>
 
 // set by the signal handler to wake up main()
-static int gotsig;
+static volatile int gotsig;
 
 // signal handler
 static void handle_sig(int, siginfo_t *, void *);
