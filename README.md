@@ -76,6 +76,13 @@ main: %ymm0: 0x1 0x2 0x3 0x4
 
 Same story.
 
+## Notes
+
+I initially tried using the Intel intrinsics to read/write using the %ymm
+registers.  The compiler outsmarted me.  When I read back the value after the
+signal handler ran, it looked correct!  That's because the compiler happened to
+restore the value into %ymm0 from the stack value before reading it back.
+
 Some references for future-me:
 
 * https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
