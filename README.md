@@ -7,9 +7,8 @@ The program does this:
 
 1. Sets up signal handlers.
 2. Writes a known value (64-bit integers 1, 2, 3, and 4) to %ymm0.
-3. Enters an infinite loop waiting for a signal.  *After* handling any signal,
-   it prints out the value of %ymm0, sets it back to the known value, and waits
-   for another signal so you can try again.
+3. Enters an infinite loop waiting for the value in %ymm0 to change.  Upon
+   change, it prints out what it found.
 
 The signal handler immediately reads %ymm0 and prints what it finds.  If the
 signal is SIGINT or SIGUSR1, it writes a different known value (64-bit integers
@@ -19,62 +18,32 @@ measure.
 Start it up:
 
 ```
-$ gcc -march=native -m64 -Wall -o checkregs main.c asm.s  && ./checkregs 
+$ gmake
+...
+$ ./checkregs
 main: test value (expect zeros): 0x0 0x0 0x0 0x0
-main: %ymm0: 0x1 0x2 0x3 0x4
-main: waiting for SIGINT, SIGUSR1, or SIGUSR2
+main: after update, test value: 0x1 0x2 0x3 0x4
+main: writing to %ymm0 and busy-waiting for it to change
 ```
 
-Now hit it with SIGINT:
+Now hit it with SIGUSR2, which basically does nothing:
 
 ```
+handle_sig: found loop_counter = 4694448974, %ymm0 = 0x1 0x2 0x3 0x4 (NO clobber)
+
+handle_sig: found loop_counter = 7975071888, %ymm0 = 0x1 0x2 0x3 0x4 (NO clobber)
+```
+
+Now hit it with SIGINT, which clobbers %ymm0:
+
+````
 ^C
-handle_sig: found %ymm0 = 0xff0000000000 0x0 0x3 0x4 (CLOBBER)
+handle_sig: found loop_counter = 11865090863, %ymm0 = 0x1 0x2 0x3 0x4 (CLOBBER)
     now %ymm0 = 0x5 0x6 0x7 0x8
-main: saw signal
-main: %ymm0: 0xff000000000000 0x0 0x3 0x4
-main: resetting ymm0
-main: %ymm0: 0x1 0x2 0x3 0x4
+main: after loop (loop_counter = 11865090864), test value: 0x1 0x2 0x7 0x8
 ```
 
-In that case, `main` found a different %ymm0 than it had before.  The low 128
-bits are the same, but the high 128 bits are different.  Then it reset %ymm0 so
-we can try it again:
-
-```
-^C
-handle_sig: found %ymm0 = 0x1 0x2 0x3 0x4 (CLOBBER)
-    now %ymm0 = 0x5 0x6 0x7 0x8
-main: saw signal
-main: %ymm0: 0xff000000000000 0x0 0x3 0x4
-main: resetting ymm0
-main: %ymm0: 0x1 0x2 0x3 0x4
-```
-
-Same story, though this time the signal handler at least found the value that
-`main()` had left.
-
-Now let's do it with SIGUSR2, whose handler doesn't write to %ymm0:
-
-```
-handle_sig: found %ymm0 = 0x1 0x2 0x3 0x4 (NO clobber)
-main: saw signal
-main: %ymm0: 0xff000000000000 0x0 0x3 0x4
-main: resetting ymm0
-main: %ymm0: 0x1 0x2 0x3 0x4
-```
-
-Same story.  Again:
-
-```
-handle_sig: found %ymm0 = 0x1 0x2 0x3 0x4 (NO clobber)
-main: saw signal
-main: %ymm0: 0xff000000000000 0x0 0x3 0x4
-main: resetting ymm0
-main: %ymm0: 0x1 0x2 0x3 0x4
-```
-
-Same story.
+The low 128 bits are the same, but the high 128 bits are different.
 
 ## Notes
 
