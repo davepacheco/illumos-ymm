@@ -36,7 +36,7 @@ handle_sig: found loop_counter = 7975071888, %ymm0 = 0x1 0x2 0x3 0x4 (NO clobber
 
 Now hit it with SIGINT, which clobbers %ymm0:
 
-````
+```
 ^C
 handle_sig: found loop_counter = 11865090863, %ymm0 = 0x1 0x2 0x3 0x4 (CLOBBER)
     now %ymm0 = 0x5 0x6 0x7 0x8
